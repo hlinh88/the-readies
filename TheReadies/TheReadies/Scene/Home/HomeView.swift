@@ -25,14 +25,25 @@ struct HomeView: View {
         }
     }
     
+    @State private var threshold: CGFloat?
+    @State private var shouldShowFloatingTitle = false
+    
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 0) {
             VStack {
                 Text("The Readies")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
-                    .opacity(0)
+                    .opacity(shouldShowFloatingTitle ? 1 : 0)
+                
+                Spacer()
+                
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(.gray.opacity(0.2))
+                    .opacity(shouldShowFloatingTitle ? 1 : 0)
             }
+            .frame(height: 32)
             
             ScrollView {
                 LazyVStack(spacing: 16) {
@@ -41,6 +52,23 @@ struct HomeView: View {
                         .font(.largeTitle)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16)
+                        .background(GeometryReader { geometry in
+                            let minY = geometry.frame(in: .global).minY
+                            
+                            SwiftUI.Color.clear
+                                .onAppear {
+                                    if threshold == nil {
+                                        threshold = minY - geometry.size.height
+                                    }
+                                }
+                                .onChange(of: minY) { _, newValue in
+                                    withAnimation {
+                                        if let threshold {
+                                            shouldShowFloatingTitle = newValue < threshold
+                                        }
+                                    }
+                                }
+                        })
                     
                     ForEach(SectionTitle.allCases, id: \.self) { section in
                         Section {
