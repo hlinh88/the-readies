@@ -29,73 +29,75 @@ struct HomeView: View {
     @State private var shouldShowFloatingTitle = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack {
-                Text("The Readies")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .opacity(shouldShowFloatingTitle ? 1 : 0)
-                
-                Spacer()
-                
-                Rectangle()
-                    .frame(height: 1)
-                    .foregroundColor(.gray.opacity(0.2))
-                    .opacity(shouldShowFloatingTitle ? 1 : 0)
-            }
-            .frame(height: 32)
-            
-            ScrollView {
-                LazyVStack(spacing: 16) {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack {
                     Text("The Readies")
-                        .bold()
-                        .font(.largeTitle)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .background(GeometryReader { geometry in
-                            let minY = geometry.frame(in: .global).minY
-                            
-                            SwiftUI.Color.clear
-                                .onAppear {
-                                    if threshold == nil {
-                                        threshold = minY - geometry.size.height
-                                    }
-                                }
-                                .onChange(of: minY) { _, newValue in
-                                    withAnimation {
-                                        if let threshold {
-                                            shouldShowFloatingTitle = newValue < threshold
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .opacity(shouldShowFloatingTitle ? 1 : 0)
+                    
+                    Spacer()
+                    
+                    Rectangle()
+                        .frame(height: 1)
+                        .foregroundColor(.gray.opacity(0.2))
+                        .opacity(shouldShowFloatingTitle ? 1 : 0)
+                }
+                .frame(height: 32)
+                
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        Text("The Readies")
+                            .bold()
+                            .font(.largeTitle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .background(GeometryReader { geometry in
+                                let minY = geometry.frame(in: .named("scrollView")).minY
+                                
+                                Color.clear
+                                    .onAppear {
+                                        if threshold == nil {
+                                            threshold = minY - geometry.size.height
                                         }
                                     }
+                                    .onChange(of: minY) { _, newValue in
+                                        withAnimation {
+                                            if let threshold {
+                                                shouldShowFloatingTitle = newValue < threshold
+                                            }
+                                        }
+                                    }
+                            })
+                        
+                        ForEach(SectionTitle.allCases, id: \.self) { section in
+                            Section {
+                                switch section {
+                                case .ReadingNow:
+                                    ReadingNowView(books: READING_NOW_BOOKS)
+                                        .padding(.leading, 16)
+                                    
+                                case .Library:
+                                    LibraryView()
+                                        .padding(.horizontal, 16)
                                 }
-                        })
-                    
-                    ForEach(SectionTitle.allCases, id: \.self) { section in
-                        Section {
-                            switch section {
-                            case .ReadingNow:
-                                ReadingNowView(books: READING_NOW_BOOKS)
-                                    .padding(.leading, 16)
-                                
-                            case .Library:
-                                LibraryView()
+                            } header: {
+                                Text(section.title)
+                                    .font(.system(size: 20))
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 16)
                             }
-                        } header: {
-                            Text(section.title)
-                                .font(.system(size: 20))
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 16)
                         }
-
                     }
                 }
+                .coordinateSpace(name: "scrollView")
+                
+                Spacer()
             }
-            
-            Spacer()
+            .background(Color.homeBackground)
         }
-        .background(.homeBackground)
     }
     
     struct ReadingNowView: View {
@@ -105,34 +107,38 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 16) {
                     ForEach(books, id: \.id) { book in
-                        HStack {
-                            Image(.bookCover)
-                                .resizable()
-                                .frame(width: 60, height: 80)
-                            
-                            VStack(alignment: .leading){
-                                Text(book.title)
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                        NavigationLink(destination: BookView(book: book)) {
+                            HStack {
+                                Image(.bookCover)
+                                    .resizable()
+                                    .frame(width: 60, height: 80)
                                 
-                                Text(book.author)
-                                    .font(.caption)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                VStack(alignment: .leading){
+                                    Text(book.title)
+                                        .font(.headline)
+                                        .foregroundColor(.black)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    
+                                    Text(book.author)
+                                        .font(.caption)
+                                        .foregroundColor(.black)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    
+                                    ProgressView(value: 0.5, total: 1.0)
+                                        .progressViewStyle(.linear)
+                                        .tint(.white)
+                                }
+                                .frame(maxWidth: .infinity)
                                 
-                                ProgressView(value: 0.5, total: 1.0)
-                                    .progressViewStyle(.linear)
-                                    .tint(.white)
+                                Spacer()
                             }
-                            .frame(maxWidth: .infinity)
-                            
-                            Spacer()
+                            .frame(width: 250, height: 120)
+                            .padding(.horizontal, 16)
+                            .background(
+                                LinearGradient(gradient: Gradient(colors: [.red, .blue]), startPoint: .leading, endPoint: .trailing)
+                                    .cornerRadius(20)
+                            )
                         }
-                        .frame(width: 250, height: 120)
-                        .padding(.horizontal, 16)
-                        .background(
-                            LinearGradient(gradient: Gradient(colors: [.red, .blue]), startPoint: .leading, endPoint: .trailing)
-                                .cornerRadius(20)
-                        )
                     }
                 }
             }
